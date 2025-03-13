@@ -1,1 +1,6 @@
 groq
+ffmpeg
+python-dotenv
+portaudio
+speechrecognition
+pydub
