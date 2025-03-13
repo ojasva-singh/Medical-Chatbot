@@ -5,18 +5,19 @@ from groq import Groq
 
 #Load env variables
 load_dotenv()
-GROQ_API = os.getenv("GROQ_API")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Write the path of the image you want to be analyzed
-img_path = "acne.png"
+img_path = "acne.jpg"
 
 img_file = open(img_path, "rb")
 enc_img = base64.b64encode(img_file.read()).decode("utf-8")
 
 # Multimodal query
-client = Groq(GROQ_API)
+client = Groq()
 model = "llama-3.2-90b-vision-preview"
-query = ""
+query = "What is the medical condition in the image?"
+
 messages = [
     {
         "role": "user",
@@ -26,15 +27,15 @@ messages = [
                 "text": query
             },
             {
-                "type": "image",
+                "type": "image_url",
                 "image_url": {
                     "url": f"data:image/jpeg;base64,{enc_img}"
-                    },
-            },
-        ],
+                }
+            }
+        ]
     }
 ]
 
 chat = client.chat.completions.create(messages=messages, model=model)
 
-print(chat)
+print(chat.choices[0].message.content)  
