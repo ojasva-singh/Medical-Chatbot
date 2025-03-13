@@ -2,8 +2,10 @@ import logging
 import speech_recognition as sr
 from pydub import AudioSegment
 from io import BytesIO
+import os
+from dotenv import load_dotenv
+from groq import Groq
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def record_audio(file_path, timeout=20, phrase_time_limit = None):
     """ Function to record audio from the microphone and save it as an mp3 file"""
@@ -30,4 +32,38 @@ def record_audio(file_path, timeout=20, phrase_time_limit = None):
     except sr.WaitTimeoutError:
         logging.error("Timeout error. Recording stopped.")
 
-record_audio(file_path="audio.mp3")
+
+def convert_audio(file_path):
+    """ Function to convert an audio file to text using the Google Web Speech API"""
+
+    recognizer = sr.Recognizer()
+
+    #Load the audio file
+    audio_file = sr.AudioFile(file_path)
+
+    with audio_file as source:
+        audio_data = recognizer.record(source)
+
+    logging.info("Converting audio to text...")
+    try:
+        text = recognizer.recognize_google(audio_data)
+        logging.info(f"Text: {text}")
+        return text
+    except sr.UnknownValueError:
+        logging.error("Google Web Speech API could not understand the audio")
+    except sr.RequestError:
+        logging.error("Could not request results from Google Web Speech API")
+
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_path = "audio.mp3"
+#record_audio(file_path=file_path)
+
+load_dotenv()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+client = Groq()
+stt_model = "whisper-large-v3"
+audio_file = open(file_path, "rb")
+transcript = client.audio.transcriptions.create(model = stt_model, file=audio_file, language="en")
+
+print(transcript.text)
