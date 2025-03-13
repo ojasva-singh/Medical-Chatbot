@@ -7,6 +7,9 @@ import gradio as gr
 import tempfile
 from dotenv import load_dotenv
 
+# Load environment variables if needed
+load_dotenv()
+
 # System prompt for the medical assistant
 SYSTEM_PROMPT = """You are a medical assistant designed to help patients understand medical images and answer their health-related questions.
 
@@ -25,43 +28,51 @@ Guidelines:
 
 
 def process_text_query(image, text):
-
-    # Check if image and audio are provided
+    """Process the text query from the patient with the uploaded image."""
+    # Check if image and text are provided
     if image is None:
         return "Please upload a medical image.", None
     if not text or text.strip() == "":
         return "Please enter your question.", None
     
     try:
+        # Save the image to a temporary file
         temp_image_path = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False).name
         image.save(temp_image_path)
         
         # Encode the image for the vision model
         encoded_image = encode_image(temp_image_path)
-
+        
+        # Format the query with system prompt
         final_query = f"System: {SYSTEM_PROMPT}\n\nPatient: {text}"
-
-        response = llm_response(encoded_image, final_query)
-
-        audio_output = text_to_speech(response)
-
+        
+        # Get response from LLM
+        response = llm_response(final_query, encoded_image)
+        
+        # Convert response to speech and save as output.mp3
+        audio_output_path = "output.mp3"
+        text_to_speech(response, audio_output_path)
+        
+        # Clean up temporary file
         os.remove(temp_image_path)
-
-        return response, audio_output
-
-
+        
+        return response, audio_output_path
+        
     except Exception as e:
-        return f"An error occurred: {e}", None
-    
+        return f"An error occurred: {str(e)}", None
+
 
 def record_live_audio():
-    # Record audio from the user
+    """Records live audio from the user and transcribes it."""
     try:
-        audio_path = record_audio("audio.mp3")
+        # Record audio and save as input.mp3
+        audio_path = record_audio(file_path="input.mp3")
+        # Transcribe the audio
         transcription = transcription_groq(audio_path)
-        return transcription   
-    except Exception as e:  
-        return f"An error occurred: {e}"
+        return transcription
+    except Exception as e:
+        return f"Error recording audio: {str(e)}"
+
 
 # Create the Gradio interface
 with gr.Blocks(title="Medical Image Voice Assistant") as demo:
@@ -105,5 +116,6 @@ with gr.Blocks(title="Medical Image Voice Assistant") as demo:
         inputs=[image_input, text_input]
     )
 
+# Launch the Gradio app
 if __name__ == "__main__":
     demo.launch(share=True)  # Set share=True to create a shareable link

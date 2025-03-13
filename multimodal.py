@@ -40,6 +40,6 @@ def encode_image(img_path):
     enc_img = base64.b64encode(img_file.read()).decode("utf-8")
     return enc_img
 
-enc_img = encode_image("acne.jpg")
-query = "What is the medical condition in the image?"
-response = llm_response(query,enc_img)
+# enc_img = encode_image("acne.jpg")
+# query = "What is the medical condition in the image?"
+# response = llm_response(query,enc_img)

@@ -43,5 +43,5 @@ def text_to_speech(input_text, output_filepath):
     tts.save(output_filepath)
     subprocess.run(["afplay", output_filepath])
 
-text = "Hi my name is ojasva singh and this is a demo of text to speech conversion"
-text_to_speech(input_text = text, output_filepath = "output.mp3")
+# text = "Hi my name is ojasva singh and this is a demo of text to speech conversion"
+# text_to_speech(input_text = text, output_filepath = "output.mp3")
