@@ -6,3 +6,4 @@ speechrecognition
 pydubpyaudio
 elevenlabs
 gtts
+gradio
