@@ -5,3 +5,4 @@ portaudio
 speechrecognition
 pydubpyaudio
 elevenlabs
+gtts
