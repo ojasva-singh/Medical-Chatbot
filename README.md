@@ -7,7 +7,7 @@ The purpose of this chatbot is to use multimodal llms and then take the help of 
 - Groq for AI inference
 - OpenAI Whisper (STT)
 - LLAMA 3 Vision
-- gTTS and ElevenLabs (TTS)
+- gTTS or ElevenLabs (TTS)
 - Gradio for UI
 - Python 3.9
 
