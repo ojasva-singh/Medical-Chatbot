@@ -59,11 +59,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 file_path = "audio.mp3"
 record_audio(file_path=file_path)
 
-load_dotenv()
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-client = Groq()
-stt_model = "whisper-large-v3"
-audio_file = open(file_path, "rb")
-transcript = client.audio.transcriptions.create(model = stt_model, file=audio_file, language="en")
 
-print(transcript.text)
+
+def transcription_groq(file_path):
+    """ Function to convert an audio file to text using the Groq API"""
+    load_dotenv()
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    stt_model = "whisper-large-v3"  
+    client = Groq(api_key=GROQ_API_KEY)
+    audio_file = open(file_path, "rb")
+    transcript = client.audio.transcriptions.create(model = stt_model, file=audio_file, language="en")
+    return transcript.text
