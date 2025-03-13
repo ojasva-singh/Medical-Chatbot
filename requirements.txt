@@ -3,4 +3,4 @@ ffmpeg
 python-dotenv
 portaudio
 speechrecognition
-pydub
+pydubpyaudio

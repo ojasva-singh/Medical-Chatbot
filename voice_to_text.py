@@ -31,4 +31,3 @@ def record_audio(file_path, timeout=20, phrase_time_limit = None):
         logging.error("Timeout error. Recording stopped.")
 
 record_audio(file_path="audio.mp3")
-
