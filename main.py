@@ -69,8 +69,9 @@ def process_text_query(image, text):
 def record_live_audio():
     """Records live audio from the user and transcribes it."""
     try:
+        path = "input.mp3"
         # Record audio and save as input.mp3
-        audio_path = record_audio(file_path="input.mp3")
+        audio_path = record_audio(file_path=path)
         # Transcribe the audio
         transcription = transcription_groq(audio_path)
         return transcription

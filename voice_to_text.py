@@ -12,6 +12,11 @@ def record_audio(file_path, timeout=20, phrase_time_limit = None):
 
     recognizer = sr.Recognizer()
 
+    if file_path is None:
+        file_path = "input.mp3"
+    
+    logging.info(f"Will save recording to: {file_path}")
+
     try: 
         with sr.Microphone() as source:
             logging.info("Adjusting for ambient noise...")
@@ -55,9 +60,9 @@ def convert_audio(file_path):
         logging.error("Could not request results from Google Web Speech API")
 
 
-# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# file_path = "audio.mp3"
-# record_audio(file_path=file_path)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_path = "audio.mp3"
+record_audio(file_path=file_path)
 
 
 def transcription_groq(file_path):
