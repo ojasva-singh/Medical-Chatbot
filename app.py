@@ -13,26 +13,42 @@ from voice_to_text import record_audio, convert_audio, transcription_groq
 # Load environment variables
 load_dotenv()
 
-# System prompt for the medical assistant
+# System prompt for the medical assistant 
 SYSTEM_PROMPT = """You are a medical assistant designed to help patients understand medical images and answer their health-related questions.
 
 Role:
-- You help patients understand their medical images and related questions.
+- You help patients understand their medical images and provide preliminary assessments.
 - You provide clear, accessible explanations of what can be observed in medical imagery.
+- You always offer professional recommendations after your assessment.
 
 Guidelines:
-- Analyze the medical image provided by the patient
-- Answer questions about the image in a clear, concise and accurate manner
-- Provide information in simple language that patients can understand
+- Always analyze the medical image provided by the patient
+- First, provide a clear preliminary assessment of what you observe in the image
+- Describe visible patterns, structures, or abnormalities in simple terms
+- Use medical terminology when necessary but explain it in patient-friendly language
+- When providing your assessment, be honest about what is visible while avoiding absolute certainty
+- Always follow your assessment with specific recommendations for professional follow-up
+- Suggest the appropriate type of specialist the patient should consult based on your observations
+- Mention the urgency level for seeking professional care (routine, soon, urgent)
 - Be compassionate and reassuring while maintaining medical accuracy
-- When appropriate, suggest when the patient should seek further medical consultation
-- Do not attempt to provide definitive diagnoses, but rather describe what can be observed in the image
-- Clarify that your interpretations are for informational purposes only and not a substitute for professional medical advice.
-- Only provide diagnosis and later you can add on by recommending professionals in the same field, but a diagnosis is necessary.
+
+Assessment Structure:
+- Begin with "Based on this image, I observe..." followed by your detailed observations
+- Then state "This may indicate..." with possible interpretations
+- Always conclude with "I recommend..." followed by professional consultation advice
 
 Output Format:
-- The response should start with addressing the problem and nothing else.
-- The response should be concise, maximum of 4 sentences."""
+- Always include both an assessment and professional recommendation
+- Structure your response in 2-3 sentences for the assessment
+- Add 1-2 sentences for professional recommendations
+- Maximum total length of 4-5 sentences
+- Use clear, direct language with appropriate medical terminology explained
+
+Important Note:
+- Always clarify that your assessment is preliminary, based only on the image
+- Emphasize that only a qualified healthcare provider can provide a definitive diagnosis
+- Make it clear that your interpretations are for informational purposes only
+"""
 
 # Initialize session state variables if they don't exist
 if 'response' not in st.session_state:
@@ -45,6 +61,8 @@ if 'processed_image' not in st.session_state:
     st.session_state.processed_image = None
 if 'submitted' not in st.session_state:
     st.session_state.submitted = False
+if 'voice_transcription' not in st.session_state:
+    st.session_state.voice_transcription = None
 
 def process_query():
     """Process the user's query with the uploaded image"""
@@ -66,22 +84,34 @@ def process_query():
             rgb_image = st.session_state.processed_image.convert('RGB')
             rgb_image.save(temp_image_path)
             
+            # Log information for debugging
+            debug_info = f"Image saved to {temp_image_path}, size: {rgb_image.size}"
+            
             # Encode the image for the vision model
             encoded_image = encode_image(temp_image_path)
             
             # Format the query with system prompt
-            # final_query = f"System: {SYSTEM_PROMPT}\n\nPatient: {st.session_state.question}"
             final_query = f"""System: {SYSTEM_PROMPT}
 
-            Patient: {st.session_state.question}
+Patient: {st.session_state.question}
 
-            Please analyze the medical image and respond to the patient's question."""
-            
+Please analyze the medical image and respond to the patient's question."""
+
             # Get response from LLM with better error handling
             try:
+                # Log the query for debugging
+                debug_info += f"\nQuery length: {len(final_query)} chars"
+                
+                # Call the LLM
                 response = llm_response(final_query, encoded_image)
-                if not response or response.strip() == "":
-                    raise Exception("Empty response received from LLM")
+                
+                # Check if response is meaningful
+                if not response or response.strip() == "" or "not able to provide assistance" in response:
+                    debug_info += "\nReceived empty or rejection response from LLM"
+                    fallback_response = "I apologize, but I couldn't analyze this image properly. This could be due to image quality, format issues, or content restrictions. Please try a different medical image or rephrase your question to be more specific about what you'd like to know about the image."
+                    response = fallback_response
+                else:
+                    debug_info += f"\nReceived valid response of {len(response)} chars"
                 
                 # Convert response to speech and save as output.mp3
                 audio_output_path = "output.mp3"
@@ -91,16 +121,25 @@ def process_query():
                 st.session_state.response = response
                 st.session_state.audio_path = audio_output_path
                 st.session_state.submitted = True
+                st.session_state.debug_info = debug_info
+                
             except Exception as e:
+                debug_info += f"\nError in LLM call: {str(e)}"
                 st.error(f"Error getting response from LLM: {str(e)}")
-                st.session_state.response = "I apologize, but I couldn't analyze this image properly. Please try again or upload a different image."
+                st.session_state.response = "I apologize, but I encountered an error while analyzing this image. Please try again with a different image or question."
                 st.session_state.submitted = True
+                st.session_state.debug_info = debug_info
             
             # Clean up temporary file
-            os.remove(temp_image_path)
+            try:
+                os.remove(temp_image_path)
+            except:
+                pass
             
         except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+            st.error(f"An error occurred during image processing: {str(e)}")
+            st.session_state.response = "I encountered an error while processing your image. Please make sure you've uploaded a valid medical image and try again."
+            st.session_state.submitted = True
 
 def record_voice():
     """Record and transcribe audio"""
@@ -113,8 +152,13 @@ def record_voice():
         with st.spinner("Transcribing your question..."):
             # Transcribe the audio
             transcription = transcription_groq(path)
-            st.session_state.question = transcription
-            st.success("Voice recording transcribed!")
+            
+            # Store the transcription in session state
+            # We don't directly modify st.session_state.question which would cause an error
+            st.session_state.voice_transcription = transcription
+            
+            # Force the app to rerun to show the transcription
+            st.rerun()
             
     except Exception as e:
         st.error(f"Error recording audio: {str(e)}")
@@ -127,7 +171,15 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Apply dark theme to the entire app
+# App header with beautiful typography
+st.markdown('<h1 class="main-title">Medical Image Voice Assistant</h1>', unsafe_allow_html=True)
+st.markdown(
+    '<p class="subtitle">Your AI-powered assistant for understanding medical images. '
+    'Ask questions about your medical images and receive clear, informative explanations.</p>',
+    unsafe_allow_html=True
+)
+
+# Apply dark theme to the entire app (CSS moved here to ensure it loads first)
 st.markdown("""
 <style>
     /* Apply dark theme to the entire app */
@@ -249,25 +301,24 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# App header with beautiful typography
-st.markdown('<h1 class="main-title">Medical Image Voice Assistant</h1>', unsafe_allow_html=True)
-st.markdown(
-    '<p class="subtitle">Your AI-powered assistant for understanding medical images. '
-    'Ask questions about your medical images and receive clear, informative explanations.</p>',
-    unsafe_allow_html=True
-)
-
 # Main input container
 with st.container():
     # Text question input (first in the flow)
     st.markdown('<div class="section-header">Ask Your Question</div>', unsafe_allow_html=True)
     
-    if 'question' not in st.session_state:
-        st.session_state.question = ""
+    # Initialize question from voice transcription if available
+    question_value = ""
+    if 'voice_transcription' in st.session_state and st.session_state.voice_transcription:
+        question_value = st.session_state.voice_transcription
+        # Clear the transcription after it's been used
+        st.session_state.voice_transcription = None
+        st.success("Voice recording transcribed!")
+    elif 'question' in st.session_state:
+        question_value = st.session_state.question
     
     st.text_area(
         "Enter your question about the medical image",
-        value=st.session_state.question,
+        value=question_value,
         key="question",
         placeholder="What can you tell me about this image?",
         height=100
@@ -283,7 +334,8 @@ with st.container():
     # Image upload option (third in the flow)
     st.markdown('<div class="section-header">Upload Your Medical Image</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png"])
+    # FIX: Added a proper label to the file uploader to address accessibility warning
+    uploaded_file = st.file_uploader("Upload a medical image", type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
         image = Image.open(uploaded_file)
         st.session_state.processed_image = image
@@ -317,35 +369,6 @@ if st.session_state.submitted:
 
 # Examples at the bottom (display only, no interaction)
 st.markdown("""
-<style>
-.examples-container {
-    background-color: #121212;
-    padding: 20px;
-    border-radius: 10px;
-    margin-top: 30px;
-    margin-bottom: 30px;
-}
-.examples-title {
-    color: white;
-    font-size: 1.3rem;
-    margin-bottom: 20px;
-    font-weight: 500;
-}
-.example-image-container {
-    background-color: #1e1e1e;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 15px;
-}
-.example-question {
-    color: white;
-    font-size: 1rem;
-    font-style: italic;
-    margin-top: 10px;
-    margin-bottom: 20px;
-}
-</style>
-
 <div class="examples-container">
     <div class="examples-title">These examples show the types of medical images and questions you can ask:</div>
 </div>
@@ -357,7 +380,8 @@ cols = st.columns(3)
 # Example 1
 with cols[0]:
     if os.path.exists("example_images/xray.jpg"):
-        st.image("example_images/xray.jpg", use_container_width=True)
+        # FIX: Added proper image caption for accessibility
+        st.image("example_images/xray.jpg", caption="X-ray image example", use_container_width=True)
     else:
         st.markdown("*X-ray image*")
     st.markdown("<p class='example-question'>Example question:<br>What does this X-ray show?</p>", unsafe_allow_html=True)
@@ -365,7 +389,8 @@ with cols[0]:
 # Example 2
 with cols[1]:
     if os.path.exists("example_images/mri.jpg"):
-        st.image("example_images/mri.jpg", use_container_width=True)
+        # FIX: Added proper image caption for accessibility
+        st.image("example_images/mri.jpg", caption="MRI scan example", use_container_width=True)
     else:
         st.markdown("*MRI image*")
     st.markdown("<p class='example-question'>Example question:<br>Is there anything concerning in this MRI?</p>", unsafe_allow_html=True)
@@ -373,7 +398,8 @@ with cols[1]:
 # Example 3
 with cols[2]:
     if os.path.exists("example_images/ultrasound.jpg"):
-        st.image("example_images/ultrasound.jpg", use_container_width=True)
+        # FIX: Added proper image caption for accessibility
+        st.image("example_images/ultrasound.jpg", caption="Ultrasound image example", use_container_width=True)
     else:
         st.markdown("*Ultrasound image*")
     st.markdown("<p class='example-question'>Example question:<br>Can you explain what I'm seeing in this ultrasound?</p>", unsafe_allow_html=True)
