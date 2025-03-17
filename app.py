@@ -28,6 +28,7 @@ Guidelines:
 - When appropriate, suggest when the patient should seek further medical consultation
 - Do not attempt to provide definitive diagnoses, but rather describe what can be observed in the image
 - Clarify that your interpretations are for informational purposes only and not a substitute for professional medical advice.
+- Only provide diagnosis and later you can add on by recommending professionals in the same field, but a diagnosis is necessary.
 
 Output Format:
 - The response should start with addressing the problem and nothing else.
@@ -69,7 +70,12 @@ def process_query():
             encoded_image = encode_image(temp_image_path)
             
             # Format the query with system prompt
-            final_query = f"System: {SYSTEM_PROMPT}\n\nPatient: {st.session_state.question}"
+            # final_query = f"System: {SYSTEM_PROMPT}\n\nPatient: {st.session_state.question}"
+            final_query = f"""System: {SYSTEM_PROMPT}
+
+            Patient: {st.session_state.question}
+
+            Please analyze the medical image and respond to the patient's question."""
             
             # Get response from LLM with better error handling
             try:
