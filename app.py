@@ -117,17 +117,24 @@ def record_voice():
 st.set_page_config(
     page_title="Medical Image Voice Assistant",
     page_icon="🏥",
-    layout="centered"
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for better styling
+# Apply dark theme to the entire app
 st.markdown("""
 <style>
+    /* Apply dark theme to the entire app */
+    .stApp {
+        background-color: #121212;
+        color: white;
+    }
+    
     .main-title {
         font-family: 'Helvetica Neue', sans-serif;
         font-weight: 700;
         font-size: 2.5rem;
-        color: #0066CC;
+        color: #ffffff;
         margin-bottom: 1rem;
         text-align: center;
     }
@@ -135,7 +142,7 @@ st.markdown("""
     .subtitle {
         font-family: 'Helvetica Neue', sans-serif;
         font-size: 1.2rem;
-        color: #555555;
+        color: #cccccc;
         margin-bottom: 2rem;
         text-align: center;
         line-height: 1.6;
@@ -145,30 +152,30 @@ st.markdown("""
         font-family: 'Helvetica Neue', sans-serif;
         font-weight: 600;
         font-size: 1.5rem;
-        color: #333333;
+        color: #ffffff;
         margin-top: 2rem;
         margin-bottom: 1rem;
         padding-bottom: 0.5rem;
-        border-bottom: 2px solid #f0f2f6;
+        border-bottom: 2px solid #333333;
     }
     
-    .card {
-        background-color: #f8f9fa;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
+    /* Override Streamlit's default styles */
+    .stTextInput > label, .stTextArea > label, .stFileUploader > label {
+        color: #ffffff !important;
     }
     
-    .response-box {
-        background-color: #f0f7ff;
-        border-left: 5px solid #0066CC;
-        padding: 15px;
-        border-radius: 5px;
-        margin-top: 10px;
-        margin-bottom: 15px;
+    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
+        background-color: #1e1e1e !important;
+        color: #ffffff !important;
+        border: 1px solid #333333 !important;
     }
     
+    .stFileUploader > div > div {
+        background-color: #1e1e1e !important;
+        color: #ffffff !important;
+    }
+    
+    /* Button styles */
     .stButton button {
         width: 100%;
         border-radius: 5px;
@@ -178,23 +185,19 @@ st.markdown("""
         color: white;
     }
     
-    .st-emotion-cache-1kyxreq {
-        justify-content: center;
+    .stButton button:hover {
+        background-color: #0052a3;
     }
     
-    .divider {
-        margin-top: 2rem;
-        margin-bottom: 2rem;
-        border-top: 1px solid #e6e6e6;
-    }
-    
-    .footer {
-        text-align: center;
-        color: #666666;
-        font-size: 0.8rem;
-        margin-top: 2rem;
-        padding-top: 1rem;
-        border-top: 1px solid #e6e6e6;
+    /* Response and results styling */
+    .response-box {
+        background-color: #1e1e1e;
+        border-left: 5px solid #0066CC;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 10px;
+        margin-bottom: 15px;
+        color: white;
     }
     
     /* Dark theme for examples section */
@@ -226,6 +229,16 @@ st.markdown("""
         font-style: italic;
         margin-top: 10px;
         margin-bottom: 20px;
+    }
+    
+    /* Footer styling */
+    .footer {
+        text-align: center;
+        color: #aaaaaa;
+        font-size: 0.8rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #333333;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -277,17 +290,22 @@ with st.container():
 
 # Show results only after submission
 if st.session_state.submitted:
-    st.markdown('<div class="section-header">Results</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header" style="color: white; border-bottom: 2px solid #333;">Results</div>', unsafe_allow_html=True)
     
     # Display text response
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Assistant's Response:")
-    st.markdown(f'<div class="response-box">{st.session_state.response}</div>', unsafe_allow_html=True)
+    st.markdown('<div style="background-color: #121212; padding: 20px; border-radius: 10px; margin-bottom: 20px;">', unsafe_allow_html=True)
+    st.markdown('<h3 style="color: white; margin-bottom: 15px;">Assistant\'s Response:</h3>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: #1e1e1e; color: white; padding: 15px; border-radius: 5px; border-left: 5px solid #0066CC; font-size: 16px;">{st.session_state.response}</div>', unsafe_allow_html=True)
     
     # Display audio response
+    st.markdown('<h3 style="color: white; margin-top: 20px; margin-bottom: 15px;">Spoken Response:</h3>', unsafe_allow_html=True)
     if st.session_state.audio_path and os.path.exists(st.session_state.audio_path):
-        st.subheader("Spoken Response:")
         st.audio(st.session_state.audio_path)
+    
+    # Add debug information in a collapsible section (only visible in development)
+    if 'debug_info' in st.session_state:
+        with st.expander("Debug Information (Developers Only)"):
+            st.code(st.session_state.debug_info)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
