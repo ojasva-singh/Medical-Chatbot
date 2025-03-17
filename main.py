@@ -71,9 +71,9 @@ def record_live_audio():
     try:
         path = "input.mp3"
         # Record audio and save as input.mp3
-        audio_path = record_audio(file_path=path)
+        record_audio(file_path=path)
         # Transcribe the audio
-        transcription = transcription_groq(audio_path)
+        transcription = transcription_groq(path)
         return transcription
     except Exception as e:
         return f"Error recording audio: {str(e)}"

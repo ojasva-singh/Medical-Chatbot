@@ -60,11 +60,6 @@ def convert_audio(file_path):
         logging.error("Could not request results from Google Web Speech API")
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_path = "audio.mp3"
-record_audio(file_path=file_path)
-
-
 def transcription_groq(file_path):
     """ Function to convert an audio file to text using the Groq API"""
     load_dotenv()
@@ -74,3 +69,10 @@ def transcription_groq(file_path):
     audio_file = open(file_path, "rb")
     transcript = client.audio.transcriptions.create(model = stt_model, file=audio_file, language="en")
     return transcript.text
+
+
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# file_path = "input.mp3"
+# record_audio(file_path=file_path)
+# transcription = transcription_groq(file_path)
+# print(transcription)
