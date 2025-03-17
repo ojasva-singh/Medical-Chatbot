@@ -7,4 +7,3 @@ pydubpyaudio
 elevenlabs
 gtts
 gradio
-streamlit
